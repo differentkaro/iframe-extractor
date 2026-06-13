@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iframe Extractor</title>
+  <style>
+    :root {
+      --bg: #020617;
+      --card-bg: rgba(30, 41, 59, 0.4);
+      --primary: #38bdf8;
+      --text: #f8fafc;
+      --text-muted: #64748b;
+      --glass-border: rgba(255, 255, 255, 0.1);
+    }
+    body {
+      width: 360px;
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    .container {
+      padding: 24px;
+      min-height: 200px;
+      background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.05), transparent);
+    }
+    h2 {
+      margin: 0 0 20px 0;
+      font-size: 1.1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    h2::before {
+      content: '';
+      width: 12px;
+      height: 12px;
+      background: var(--primary);
+      box-shadow: 0 0 10px var(--primary);
+      clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    }
+    .btn {
+      width: 100%;
+      padding: 10px;
+      background: var(--primary);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-weight: 800;
+      cursor: pointer;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+      transform: translateY(-1px);
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      border: 1px dashed var(--glass-border);
+      border-radius: 12px;
+    }
+
+    /* Match Board */
+    .match-board {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .match-card {
+      background: var(--card-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .match-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 6px;
+    }
+    .match-teams {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .team {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      flex: 1;
+    }
+    .team img {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50%;
+      padding: 2px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+    .team.away {
+      justify-content: flex-end;
+      text-align: right;
+    }
+    .match-score {
+      font-size: 1.1rem;
+      font-weight: 900;
+      padding: 4px 12px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 6px;
+      color: var(--primary);
+      min-width: 60px;
+      text-align: center;
+    }
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #f43f5e;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+      box-shadow: 0 0 8px #f43f5e;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.2); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .match-board-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .match-board-header h3 {
+      margin: 0;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+    .refresh-btn {
+      background: none;
+      border: none;
+      color: var(--primary);
+      cursor: pointer;
+      padding: 4px;
+      transition: transform 0.3s;
+    }
+    .refresh-btn:hover {
+      transform: rotate(180deg);
+    }
+    .refresh-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Iframe Pro</h2>
+
+    <!-- Match Board -->
+    <div class="match-board-header">
+      <h3>Live Board</h3>
+      <button id="refreshMatches" class="refresh-btn" title="Refresh Scores">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+      </button>
+    </div>
+    <div id="matchList" class="match-board">
+      <div class="empty-state">Fetching Live Matches...</div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
