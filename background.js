@@ -114,8 +114,8 @@ async function handlePlayMatch(match) {
         });
 
         // Cycle 150: ON-DEMAND INJECTION
-        // Instead of running globally, we inject only when needed
-        const injectScripts = (tabId) => {
+        const injectTools = (tabId) => {
+            // Detection Scripts
             chrome.scripting.executeScript({
                 target: { tabId: tabId, allFrames: true },
                 files: ['content.js']
@@ -126,27 +126,32 @@ async function handlePlayMatch(match) {
                 files: ['bypass.js'],
                 world: 'MAIN'
             }).catch(() => {});
+
+            // Loading Overlay
+            chrome.scripting.executeScript({
+                target: { tabId: tabId },
+                func: () => {
+                    if (document.getElementById('extractor-overlay')) return;
+                    const overlay = document.createElement('div');
+                    overlay.id = 'extractor-overlay';
+                    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:2147483647;display:flex;flex-direction:column;justify-content:center;align-items:center;color:white;font-family:system-ui,sans-serif;pointer-events:all;backdrop-filter:blur(5px);';
+                    overlay.innerHTML = `
+                        <div style="width:50px;height:50px;border:5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:20px;"></div>
+                        <h2 style="margin:0;font-size:24px;">Stream is loading...</h2>
+                        <p style="margin-top:10px;color:#ccc;">Please do not interact with the page.</p>
+                        <style>@keyframes spin { 100% { transform: rotate(360deg); } } body { overflow: hidden !important; }</style>
+                    `;
+                    document.documentElement.appendChild(overlay);
+                }
+            }).catch(() => {});
         };
 
+        // Try injecting immediately
+        injectTools(tab.id);
+
         const overlayListener = (tabId, changeInfo) => {
-            if (tabId === tab.id && changeInfo.status === 'loading') {
-                injectScripts(tabId); // Inject detection scripts
-                chrome.scripting.executeScript({
-                    target: { tabId: tab.id },
-                    func: () => {
-                        if (document.getElementById('extractor-overlay')) return;
-                        const overlay = document.createElement('div');
-                        overlay.id = 'extractor-overlay';
-                        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:2147483647;display:flex;flex-direction:column;justify-content:center;align-items:center;color:white;font-family:system-ui,sans-serif;pointer-events:all;backdrop-filter:blur(5px);';
-                        overlay.innerHTML = `
-                            <div style="width:50px;height:50px;border:5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:20px;"></div>
-                            <h2 style="margin:0;font-size:24px;">Stream is loading...</h2>
-                            <p style="margin-top:10px;color:#ccc;">Please do not interact with the page.</p>
-                            <style>@keyframes spin { 100% { transform: rotate(360deg); } } body { overflow: hidden !important; }</style>
-                        `;
-                        document.documentElement.appendChild(overlay);
-                    }
-                }).catch(() => {});
+            if (tabId === tab.id && (changeInfo.status === 'loading' || changeInfo.status === 'complete')) {
+                injectTools(tabId);
             }
         };
         chrome.tabs.onUpdated.addListener(overlayListener);

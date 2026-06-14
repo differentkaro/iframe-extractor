@@ -17,9 +17,9 @@
     "declarativeNetRequestFeedback"
   ],
   "host_permissions": [
-    "https://*.aifvfjuf56juh.cfd/*",
-    "https://www.808ball12.com/*",
-    "https://*.livesports077.com/*",
+    "*://*.aifvfjuf56juh.cfd/*",
+    "*://www.808ball12.com/*",
+    "*://*.livesports077.com/*",
     "*://*.shop/*",
     "*://*.xyz/*",
     "*://*.live/*",
