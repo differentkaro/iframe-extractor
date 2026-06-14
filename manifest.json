@@ -17,13 +17,10 @@
     "declarativeNetRequestFeedback"
   ],
   "host_permissions": [
+    "<all_urls>",
     "*://*.aifvfjuf56juh.cfd/*",
     "*://www.808ball12.com/*",
-    "*://*.livesports077.com/*",
-    "*://*.shop/*",
-    "*://*.xyz/*",
-    "*://*.live/*",
-    "*://*.stream/*"
+    "*://*.livesports077.com/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; img-src * data:; frame-src https: http: *"

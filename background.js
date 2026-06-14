@@ -157,21 +157,35 @@ async function handlePlayMatch(match) {
         chrome.tabs.onUpdated.addListener(overlayListener);
         
         return new Promise((resolve) => {
+            let isResolved = false;
             const timeoutId = setTimeout(() => {
+                if (isResolved) return;
+                isResolved = true;
                 chrome.tabs.onUpdated.removeListener(overlayListener);
                 chrome.tabs.remove(tab.id).catch(() => {});
                 resolve({ success: false, error: 'Extraction timed out' });
-            }, 15000);
+            }, 20000);
 
-            const listener = (message, sender) => {
+            const listener = async (message, sender) => {
                 if (sender.tab && sender.tab.id === tab.id && message.type === 'IFRAME_DETECTED') {
+                    if (isResolved) return;
+                    isResolved = true;
+
                     clearTimeout(timeoutId);
                     chrome.runtime.onMessage.removeListener(listener);
                     chrome.tabs.onUpdated.removeListener(overlayListener);
                     
-                    chrome.tabs.remove(tab.id).catch(() => {});
-                    handleOpenPlayer(message.src, detailUrl);
-                    resolve({ success: true });
+                    try {
+                        // Open player first
+                        await handleOpenPlayer(message.src, detailUrl);
+                        // Then cleanup
+                        await chrome.tabs.remove(tab.id).catch(() => {});
+                        resolve({ success: true });
+                    } catch (err) {
+                        console.error("Critical: Player launch failed", err);
+                        chrome.tabs.remove(tab.id).catch(() => {});
+                        resolve({ success: false, error: err.message });
+                    }
                 }
             };
             chrome.runtime.onMessage.addListener(listener);
