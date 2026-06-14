@@ -5,10 +5,20 @@ An ultra-robust tool designed to extract and play video streams with stealth mod
 ## Features
 
 - **Automatic Stream Detection:** Scans for high-quality stream links and iframes.
-- **Security Policy Stripping:** Bypasses CORS, CORP, COEP, and COOP restrictions to ensure streams load correctly.
+- **Surgical Security Architecture:** Bypasses CORS, CORP, COEP, and COOP restrictions **only** within the context of the player tab.
+- **On-Demand Script Injection:** Extension logic only runs when you explicitly click "Watch", keeping your general browsing private.
 - **Dynamic Header Spoofing:** Spoofs referer and origin headers to bypass domain-level restrictions.
 - **Stealth Mode:** Extracts streams silently without user interaction on the source page.
 - **Custom Player:** Opens streams in a dedicated, optimized player.
+
+## Security & Privacy (Hardened)
+
+This extension is built with a **"Surgical Security"** model to provide high functionality without compromising your overall browser safety:
+
+- **Isolated Impacts:** Security policy modifications (like stripping CSP or X-Frame-Options) are strictly bound to the **Tab ID** of the player. Your security "shields" remain fully active on every other tab.
+- **Privacy First:** Unlike many extensions that monitor all your traffic, this tool uses **On-Demand Injection**. Detection scripts are only injected into the extraction tab at the moment you request a stream.
+- **Scoped Fault Tolerance:** Request monitoring is limited to known streaming domain patterns, ensuring the extension doesn't "see" your activity on unrelated websites.
+- **Permissions:** The extension requires `<all_urls>` permission technically to apply its surgical header rules to arbitrary third-party stream domains. However, its internal logic ensures this power is only used for the specific stream you are watching.
 
 ## Installation
 
@@ -37,4 +47,4 @@ To add this extension to Google Chrome:
 
 ## Technical Notes
 
-This extension utilizes Chrome's `declarativeNetRequest` API to handle complex header modifications and security policy bypasses in real-time. It is designed for high reliability and performance.
+This extension utilizes Chrome's `declarativeNetRequest` API and `scripting` API to handle complex header modifications and stream detection in real-time. It is designed for high reliability and follows modern MV3 best practices.
