@@ -108,15 +108,29 @@ async function handlePlayMatch(match) {
         const detailUrl = `https://www.808ball12.com/football/${match.matchId}-${match.teamLink}.html`;
         
         // Cycle 88: SILENT RESOLVER (Invisible Tab Method)
-        // We create the tab but keep it inactive and small
         const tab = await chrome.tabs.create({ 
             url: detailUrl, 
             active: true 
         });
 
-        // Inject the loading overlay to prevent user interaction
+        // Cycle 150: ON-DEMAND INJECTION
+        // Instead of running globally, we inject only when needed
+        const injectScripts = (tabId) => {
+            chrome.scripting.executeScript({
+                target: { tabId: tabId, allFrames: true },
+                files: ['content.js']
+            }).catch(() => {});
+            
+            chrome.scripting.executeScript({
+                target: { tabId: tabId, allFrames: true },
+                files: ['bypass.js'],
+                world: 'MAIN'
+            }).catch(() => {});
+        };
+
         const overlayListener = (tabId, changeInfo) => {
             if (tabId === tab.id && changeInfo.status === 'loading') {
+                injectScripts(tabId); // Inject detection scripts
                 chrome.scripting.executeScript({
                     target: { tabId: tab.id },
                     func: () => {
@@ -138,21 +152,18 @@ async function handlePlayMatch(match) {
         chrome.tabs.onUpdated.addListener(overlayListener);
         
         return new Promise((resolve) => {
-            // Set a timeout to close the tab if extraction fails
             const timeoutId = setTimeout(() => {
                 chrome.tabs.onUpdated.removeListener(overlayListener);
                 chrome.tabs.remove(tab.id).catch(() => {});
                 resolve({ success: false, error: 'Extraction timed out' });
             }, 15000);
 
-            // We listen for the content script to find the iframe on this specific tab
             const listener = (message, sender) => {
                 if (sender.tab && sender.tab.id === tab.id && message.type === 'IFRAME_DETECTED') {
                     clearTimeout(timeoutId);
                     chrome.runtime.onMessage.removeListener(listener);
                     chrome.tabs.onUpdated.removeListener(overlayListener);
                     
-                    // Found it! Close the secret tab and open player
                     chrome.tabs.remove(tab.id).catch(() => {});
                     handleOpenPlayer(message.src, detailUrl);
                     resolve({ success: true });
@@ -189,9 +200,8 @@ async function handleOpenPlayer(src, origin) {
         console.warn("Cycle 39: Could not fetch cookies for DNR relay.");
     }
 
-    // RULES V6.0
+    // RULES V7.0 (Surgically Scoped)
     const rules = [
-        // 1. All-In-One Request Header Spoofing (Referer, Origin, User-Agent, etc.)
         {
             id: mainRuleId,
             priority: 1,
@@ -201,20 +211,16 @@ async function handleOpenPlayer(src, origin) {
                     { header: 'Referer', operation: 'set', value: origin },
                     { header: 'Origin', operation: 'set', value: origin },
                     { header: 'X-Requested-With', operation: 'set', value: 'XMLHttpRequest' },
-                    // Cycle 14: Client Hint Spoofing
                     { header: 'Sec-CH-UA', operation: 'set', value: '"Chromium";v="130", "Google Chrome";v="130", "Not?A_Brand";v="99"' },
                     { header: 'Sec-CH-UA-Mobile', operation: 'set', value: '?0' },
                     { header: 'Sec-CH-UA-Platform', operation: 'set', value: '"macOS"' },
-                    // Cycle 17/40: Integrity & Anonymization
                     { header: 'X-CSRF-Token', operation: 'remove' },
                     { header: 'X-Auth-Token', operation: 'remove' },
                     { header: 'X-Forwarded-For', operation: 'remove' },
                     { header: 'Via', operation: 'remove' },
-                    // Cycle 39/43: Fetch Metadata Spoofing & Cookie Relay
                     { header: 'Sec-Fetch-Site', operation: 'set', value: 'same-origin' },
                     { header: 'Sec-Fetch-Mode', operation: 'set', value: 'navigate' },
                     { header: 'Sec-Fetch-Dest', operation: 'set', value: 'iframe' },
-                    // Cycle 48: Secure Origin Sanitization
                     { header: 'Upgrade-Insecure-Requests', operation: 'remove' },
                     ...(cookieString ? [{ header: 'Cookie', operation: 'set', value: cookieString }] : [])
                 ]
@@ -224,11 +230,9 @@ async function handleOpenPlayer(src, origin) {
                 resourceTypes: ['main_frame', 'sub_frame', 'xmlhttprequest', 'media', 'script', 'stylesheet', 'other', 'websocket']
             }
         },
-        // Cycle 47/53: BROAD TAB SHIELD (CDN-Agnostic Referer Lock)
-        // This ensures the Referer is ALWAYS the player URL, even if the stream shifts domains
         {
             id: ruleIdCounter++,
-            priority: 2, // Higher priority than domain-specific rules
+            priority: 2, 
             action: {
                 type: 'modifyHeaders',
                 requestHeaders: [
@@ -242,7 +246,6 @@ async function handleOpenPlayer(src, origin) {
                 resourceTypes: ['xmlhttprequest', 'media', 'other']
             }
         },
-        // 2. All-In-One Response Header Removal (Bypassing CORS/CORP/COEP/COOP/X-Frame)
         {
             id: responseRuleId,
             priority: 1,
@@ -254,15 +257,14 @@ async function handleOpenPlayer(src, origin) {
                     { header: 'Cross-Origin-Resource-Policy', operation: 'remove' },
                     { header: 'Cross-Origin-Embedder-Policy', operation: 'remove' },
                     { header: 'Cross-Origin-Opener-Policy', operation: 'remove' },
-                    // Cycle 28: Advanced CORS Hardening
                     { header: 'Access-Control-Allow-Origin', operation: 'set', value: '*' },
                     { header: 'Access-Control-Allow-Methods', operation: 'set', value: 'GET, POST, OPTIONS' },
                     { header: 'Vary', operation: 'remove' },
-                    // Cycle 44: Referer Policy Neutralization
                     { header: 'Referrer-Policy', operation: 'set', value: 'no-referrer-when-downgrade' }
                 ]
             },
             condition: {
+                tabIds: [tabId], // SURGICAL: Only affect this player tab
                 urlFilter: domainPattern,
                 resourceTypes: ['sub_frame', 'xmlhttprequest', 'media']
             }
@@ -294,7 +296,7 @@ async function handleOpenPlayer(src, origin) {
     }
 }
 
-// Cycle 19: Fault Tolerance (403 Detection)
+// Cycle 19: Fault Tolerance (403 Detection) - SCOPED
 if (chrome.webRequest && chrome.webRequest.onHeadersReceived) {
     chrome.webRequest.onHeadersReceived.addListener(
         (details) => {
@@ -306,7 +308,15 @@ if (chrome.webRequest && chrome.webRequest.onHeadersReceived) {
                 }).catch(() => {}); // Tab might not be a target
             }
         },
-        { urls: ["*://*/*"] }
+        { 
+            urls: [
+                "*://*.shop/*", 
+                "*://*.xyz/*", 
+                "*://*.cfd/*",
+                "*://*.stream/*",
+                "*://*.live/*"
+            ] 
+        }
     );
 }
 
